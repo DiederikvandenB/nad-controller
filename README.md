@@ -4,7 +4,7 @@ This software allows you to control your NAD amplifier over the RS232 port. Sinc
 
 Upon starting, it opens a serial port and MQTT connection. Messages sent by the device are published to the MQTT broker for further usage in other apps. Controlling the device is possible by sending messages in JSON format to the specified MQTT topic.
 
-Currently, it is required to set your amplifier to display the volume as a percentage rather than as decibels. This can be done in the menu of the device.
+**Note**: it is required to set your amplifier to display the volume as a percentage rather than as decibels. This can be done in the menu of the device.
 
 ## Usage
 Run the bin with flag `-h` to see the possible options.
@@ -27,7 +27,7 @@ $ ./nad-controller -h
             enables trace logs
 ```
 
-Note that `-input-topic` and `-output-topic` are required flags.
+**Note**: `-input-topic` and `-output-topic` are required flags.
 
 ## Supported commands
 The device outputs a bunch of commands on the serial port we do not use. Currently, only these commands are supported:
@@ -37,7 +37,7 @@ The device outputs a bunch of commands on the serial port we do not use. Current
 3. `{"command": "mute", "value": "1"}`
 4. `{"command": "source", "value": "3"}`
 
-Note that values are always stringified (for now, see todo in main.go).
+**Note**: values are always stringified (for now, see todo in main.go).
 
 ## Calculating the volume
 Even though the volume is shown as a percentage on the device's display, the serial port still receives the volume in decibels. Since these are logarithmic, volume.go is a simple way to map these two values.
