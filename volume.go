@@ -1,5 +1,6 @@
 package main
 
+// This is because NAD uses sprintf to format the percentage
 func getDecibels(percentage string) string {
   decibels := map[string]string {
     "0": "-80.0",
