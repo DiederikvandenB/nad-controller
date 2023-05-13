@@ -1,12 +1,12 @@
 package main
 
 import (
-  "bufio"
-  "flag"
-  mqtt "github.com/eclipse/paho.mqtt.golang"
-  filename "github.com/keepeye/logrus-filename"
-  log "github.com/sirupsen/logrus"
-  "go.bug.st/serial"
+	"bufio"
+	"flag"
+
+	filename "github.com/keepeye/logrus-filename"
+	log "github.com/sirupsen/logrus"
+	"go.bug.st/serial"
 )
 
 type SerialMessage struct {
@@ -50,12 +50,11 @@ func main() {
     log.SetLevel(log.TraceLevel)
   }
 
-  serialPort := openSerialPort(*serialPortAddress)
-  mqttClient := startMQTT(*brokerAddress)
-
-  go mqttToDevice(serialPort, mqttClient, *inputTopic)
-  go deviceToMqtt(bufio.NewReader(serialPort), mqttClient, *outputTopic)
-  select {}
+	serialPort := openSerialPort(*serialPortAddress)
+	go mqttToDevice(serialPort, *brokerAddress, *inputTopic)
+	mqttClient := <-MqttChannel
+	go deviceToMqtt(bufio.NewReader(serialPort), mqttClient, *outputTopic)
+	select {}
 }
 
 func openSerialPort(serialPort string) serial.Port {
@@ -70,16 +69,4 @@ func openSerialPort(serialPort string) serial.Port {
   log.WithField("serial-port", serialPort).Info("opened serial connection")
 
   return port
-}
-
-func startMQTT(address string) mqtt.Client {
-  client := mqtt.NewClient(mqtt.NewClientOptions().AddBroker(address))
-
-  if token := client.Connect(); token.Wait() && token.Error() != nil {
-    log.Fatal(token.Error())
-  }
-
-  log.WithField("broker", address).Info("connected to mqtt broker")
-
-  return client
 }

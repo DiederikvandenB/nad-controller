@@ -10,27 +10,43 @@ import (
 	"time"
 )
 
-func mqttToDevice(serialPort serial.Port, client mqtt.Client, topic string) {
-	log.WithField("topic", topic).Info("listening for commands to send to device")
+func mqttToDevice(serialPort serial.Port, address string, topic string) {
 
-	client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		jsonString := string(msg.Payload())
-		serialMessage := jsonToSerialMessage(jsonString)
+	clientOptions := mqtt.NewClientOptions().AddBroker(address)
+	clientOptions.SetPingTimeout(30 * time.Second)
+	clientOptions.SetKeepAlive(30 * time.Second)
+	clientOptions.SetAutoReconnect(true)
+	clientOptions.SetMaxReconnectInterval(10 * time.Second)
+	clientOptions.SetOnConnectHandler(func(client mqtt.Client) {
+		client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
+			jsonString := string(msg.Payload())
+			serialMessage := jsonToSerialMessage(jsonString)
 
-		log.WithFields(log.Fields{
-			"json":  jsonString,
-			"topic": topic,
-		}).Trace("message received from mqtt")
+			log.WithFields(log.Fields{
+				"json":  jsonString,
+				"topic": topic,
+			}).Trace("message received from mqtt")
 
 		if serialMessage.Command == "" || serialMessage.Value == "" {
 			log.WithField("json", jsonString).Debug("tried to send unsupported command to device")
 			return
 		}
 
-		// And finally send the command to the device
-		var mutex sync.Mutex
-		sendCommand(serialPort, serialMessage, &mutex)
+			// And finally send the command to the device
+			var mutex sync.Mutex
+			sendCommand(serialPort, serialMessage, &mutex)
+		})
 	})
+	client := mqtt.NewClient(clientOptions)
+	MqttChannel <- client
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		log.Fatal(token.Error())
+	}
+
+	log.WithField("broker", address).Info("connected to mqtt broker")
+
+	log.WithField("topic", topic).Info("listening for commands to send to device")
+
 }
 
 func jsonToSerialMessage(jsonString string) SerialMessage {
